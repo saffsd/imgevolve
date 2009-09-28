@@ -53,14 +53,13 @@ def color_distance(rgba1, rgba2):
   rmean = (rgba1[0] + rgba2[0]) / 2
   return numpy.sqrt((((512+rmean)*r*r)>>8) + 4*g*g + (((767-rmean)*b*b)>>8));
 
-class Triangle:
+class Polygon:
   def __init__(self, vertices, color):
-    if len(vertices) != 3: raise ValueError
     self.vertices = vertices
     self.color = color
   
   def __str__(self):
-    return "<Triangle vertices: %s color: %s>" % (self.vertices, self.color)
+    return "<Polygon %d vertices, color: %s>" % (len(self.vertices), self.color)
 
   @property
   def midpoint(self):
@@ -68,11 +67,11 @@ class Triangle:
     return midpoint
 
 class MyContext(cairo.Context):
-  def triangle(self, triangle):
-    self.set_source_rgba(*triangle.color)
-    self.move_to(*triangle.vertices[0])
-    self.line_to(*triangle.vertices[1])
-    self.line_to(*triangle.vertices[2])
+  def polygon(self, p):
+    self.set_source_rgba(*p.color)
+    self.move_to(*p.vertices[0])
+    for v in p.vertices[1:]:
+      self.line_to(*v)
     self.fill()
 
 class Candidate(GenomeBase):
@@ -81,12 +80,12 @@ class Candidate(GenomeBase):
     self.bg = bg 
     self.width = width
     self.height = height
-    self.triangles = []
+    self.polygons = []
 
   def __repr__(self):
     r = GenomeBase.__repr__(self)
-    r += "Triangles:\n"
-    for t in self.triangles:
+    r += "Polygons:\n"
+    for t in self.polygons:
       r += '\t' + str(t) + '\n'
     return r
 
@@ -94,7 +93,7 @@ class Candidate(GenomeBase):
     """Copy method required by pyevolve"""
     GenomeBase.copy(self, g)
     g.bg = self.bg
-    g.triangles = deepcopy(self.triangles)
+    g.polygons = deepcopy(self.polygons)
 
   def clone(self):
     newcopy = Candidate(self.width, self.height, self.bg)
@@ -106,11 +105,12 @@ class Candidate(GenomeBase):
     surface.write_to_png(filename)
 
   def savediff(self, target, filename):
-    surface = self.cairo_surface()
-    surf_im = Image.frombuffer("RGBA",( surface.get_width(),surface.get_height() ),surface.get_data(),"raw","RGBA",0,1)
-    trgt_im = target.target
-    diff = ImageChops.add(trgt_im, surf_im)
-    diff.save(filename)
+    surf = self.asarray()
+    trgt = target.target_im_array
+    diff = numpy.abs(surf - trgt)
+    diff[:,:,3] = 255
+    im = Image.frombuffer("RGBA",(self.width,self.height),diff,"raw","RGBA",0,1)
+    im.save(filename)
 
   def cairo_surface(self):
     w, h = self.width, self.height
@@ -118,8 +118,8 @@ class Candidate(GenomeBase):
     ctx = MyContext(surface)
     ctx.set_source_rgb(*self.bg)
     ctx.paint()
-    for t in self.triangles:
-      ctx.triangle(t)
+    for p in self.polygons:
+      ctx.polygon(p)
     return surface
 
   def asarray(self):

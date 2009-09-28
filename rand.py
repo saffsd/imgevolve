@@ -1,5 +1,5 @@
 from random import uniform, randint
-from common import Triangle
+from common import Polygon 
 
 def randpoint(width, height):
   return [randint(0, width), randint(0,height)]
@@ -17,7 +17,7 @@ def randrgba():
   a = uniform(0.0,1.0)
   return (r,g,b,a)
 
-def randtriangle(width, height):
-  vertices = [ randpoint(width, height) for i in range(3) ]
+def randpolygon(width, height):
+  vertices = [ randpoint(width, height) for i in range(randint(3,6)) ]
   color = randrgba()
-  return Triangle(vertices, color)
+  return Polygon(vertices, color)

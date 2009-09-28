@@ -9,49 +9,51 @@ from pyevolve import Selectors
 import genetic_operators
 from common import Candidate, TargetImage
 
-count = 0
-def callback(ga):
-  global count
-  global target
-  if count % 10 == 0:
-    best = ga.bestIndividual()
-    best.savefig('out/best%04d.png' % count)
-    #pop = ga.getPopulation()
-    #for i, ind in enumerate(pop):
-    #  ind.write('out/pop_%d_%d.png' % (count,i))
-    if count % 50 == 0:
-      best.savediff(target, 'out/diff%04d.png' % count)
-
-  count += 1
-  return False
 
 def cleanup(path):
   if os.path.exists(path):
     shutil.rmtree(path)
   os.mkdir(path)
 
-target = TargetImage('lena.jpg')
-#target = TargetImage('target.png')
+class ShowIntermediate:
+  def __init__(self, target):
+    self.target = target
+    self.count = 0
 
-def main():
-  global target
+  def __call__(self, ga):
+    if self.count % 10 == 0:
+      best = ga.bestIndividual()
+      best.savefig(os.path.join(path,'best%04d.png' % self.count))
+      if self.count % 50 == 0:
+        best.savediff(self.target, os.path.join(path, 'diff%04d.png' % self.count))
+    self.count += 1
+    return False
+    
+def main(path, image):
+  target = TargetImage(image)
+  count = 0
 
-  #eval_func = target.rms_difference
+  callback = ShowIntermediate(target)
+
+  eval_func = target.rms_difference
   #eval_func = target.abs_difference
-  eval_func = target.percept_difference
+  #eval_func = target.percept_difference
 
   # Initialize genome
   w, h = target.target.size
   genome = Candidate(w, h)
   genome.evaluator.set(eval_func)
   genome.initializator.set(genetic_operators.CandidateInitializator)
-  genome.mutator.add(genetic_operators.AddTriangle)
-  genome.mutator.add(genetic_operators.RemoveTriangle)
-  #genome.mutator.add(genetic_operators.Reshuffle)
-  genome.mutator.add(genetic_operators.AdjustTriangle)
+  genome.mutator.add(genetic_operators.AddPolygon)
+  genome.mutator.add(genetic_operators.RemovePolygon)
+  genome.mutator.add(genetic_operators.Reshuffle)
+  genome.mutator.add(genetic_operators.Transpose)
+  genome.mutator.add(genetic_operators.AdjustPolygon)
   genome.mutator.add(genetic_operators.AdjustBackground)
+  genome.mutator.add(genetic_operators.ChangePolygonOrder)
+  genome.mutator.add(genetic_operators.ChangePolygonColor)
   genome.crossover.set(genetic_operators.SwapOne)
-  #genome.crossover.add(genetic_operators.SinglePointCrossover)
+  genome.crossover.add(genetic_operators.SinglePointCrossover)
   genome.crossover.add(genetic_operators.AverageBackground)
 
 
@@ -60,8 +62,8 @@ def main():
   #ga.selector.set(Selectors.GRouletteWheel)
   ga.selector.set(Selectors.GRankSelector)
   ga.setPopulationSize(50)
-  ga.setGenerations(100)
-  ga.setMutationRate(0.05)
+  ga.setGenerations(100000000)
+  ga.setMutationRate(0.005)
   ga.setCrossoverRate(0.8)
   ga.stepCallback.set(callback)
   ga.setMinimax(0) 
@@ -69,8 +71,9 @@ def main():
   pop = ga.getPopulation()
   ga.evolve(freq_stats = 10)
 
-import cProfile
+import sys
 if __name__ == "__main__":
-  cleanup('out')
-  #cProfile.run(main(), 'profile')
-  main()
+  path = sys.argv[1]
+  image = sys.argv[2]
+  cleanup(path)
+  main(path, image)
