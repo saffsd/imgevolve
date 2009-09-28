@@ -8,6 +8,7 @@ from pyevolve.GenomeBase import GenomeBase
 from pyevolve.GSimpleGA import GSimpleGA
 from PIL import Image
 from random import randint, uniform, choice, shuffle
+import random
 import pyevolve.Util as Util
 from pyevolve import Selectors
 
@@ -35,16 +36,18 @@ class rms_difference:
 class MyContext(cairo.Context):
   def triangle(self, triangle):
     self.set_source_rgba(*triangle.color)
-    self.move_to(*triangle.p1)
-    self.line_to(*triangle.p2)
-    self.line_to(*triangle.p3)
+    self.move_to(*triangle.vertices[0])
+    self.line_to(*triangle.vertices[1])
+    self.line_to(*triangle.vertices[2])
     self.fill()
 
+def randpoint(width, height):
+  return [randint(0, width), randint(0,height)]
+
 class Triangle:
-  def __init__(self, p1, p2, p3, color):
-    self.p1 = p1
-    self.p2 = p2
-    self.p3 = p3
+  def __init__(self, vertices, color):
+    if len(vertices) != 3: raise ValueError
+    self.vertices = vertices
     self.color = color
   
   def __getstate__(self):
@@ -54,20 +57,18 @@ class Triangle:
     self.__dict__.update(state)
 
   def __str__(self):
-    return "P1: %s P2: %s P3: %s Color: %s" % (self.p1, self.p2, self.p3, self.color)
+    return "Vertices: %s Color: %s" % (self.vertices, self.color)
 
   @staticmethod
   def random(width, height, target):
-    p1 = (randint(0, width), randint(0,height))
-    p2 = (randint(0, width), randint(0,height))
-    p3 = (randint(0, width), randint(0,height))
-    midpoint = ((p1[0]+p2[0]+p3[0]) / 3, (p1[1]+p2[1]+p3[1]) / 3)
+    vertices = [ randpoint(width, height) for i in range(3) ]
+    midpoint = tuple(sum(dim) / len(dim) for dim in zip(*vertices))
     r,g,b,a = target.getpixel(midpoint)
     r /= 255.0
     g /= 255.0
     b /= 255.0
     a = uniform(0.0,1.0)
-    return Triangle(p1, p2, p3, (r,g,b,a))
+    return Triangle(vertices, (r,g,b,a))
     
 class Candidate(GenomeBase):
   def __init__(self, width, height, bg=(0,0,0)):
@@ -98,9 +99,6 @@ class Candidate(GenomeBase):
   def write(self, filename):
     surface = self.get_surface()
     surface.write_to_png(filename)
-
-  def add_triangle(self, p1, p2, p3, color):
-    self.triangles.append(Triangle(p1,p2,p3,color))
 
   def get_surface(self):
     w, h = self.width, self.height
@@ -147,6 +145,17 @@ def RemoveTriangle(genome, **args):
   else:
     return 0
 
+def AdjustTriangle(genome, **args):
+  """ Remove a random triangle """
+  if len(genome.triangles) == 0: return 0
+  if Util.randomFlipCoin(args['pmut']):
+    index = choice(xrange(len(genome.triangles)))
+    t = genome.triangles[index]
+    t.vertices[randint(0,2)][randint(0,1)] += int(random.gauss(0,genome.width))
+    return 1
+  else:
+    return 0
+
 def reshuffle(genome, **args):
   """Reshuffle the order of the triangles"""
   if Util.randomFlipCoin(args['pmut']):
@@ -176,6 +185,25 @@ def SwapOne(genome, **args):
   brother.triangles[bro_i] = temp
   return (sister, brother)
 
+def SinglePointCrossover(genome, **args):
+  """ Exchange some genetic material """
+  gMom = args['mom']
+  gDad = args['dad']
+
+  sister = gMom.clone()
+  brother = gDad.clone()
+  sister.resetStats()
+  brother.resetStats()
+  
+  sis_i = choice(xrange(len(sister.triangles)))
+  bro_i = choice(xrange(len(brother.triangles)))
+
+  sis_new = sister.triangles[:sis_i] + brother.triangles[bro_i:]
+  bro_new = brother.triangles[:bro_i] + sister.triangles[sis_i:]
+  sister.triangles = sis_new
+  brother.triangles = bro_new
+  return (sister, brother)
+
 count = 0
 def callback(ga):
   global count
@@ -202,14 +230,16 @@ genome.initializator.set(CandidateInitializator)
 genome.mutator.add(AddTriangle)
 genome.mutator.add(RemoveTriangle)
 genome.mutator.add(reshuffle)
-genome.crossover.set(SwapOne)
+genome.mutator.add(AdjustTriangle)
+#genome.crossover.set(SwapOne)
+genome.crossover.add(SinglePointCrossover)
 
 
 ga = GSimpleGA(genome)
-ga.selector.set(Selectors.GRouletteWheel)
-ga.setPopulationSize(20)
-ga.setGenerations(10000000)
-ga.setMutationRate(0.1)
+ga.selector.set(Selectors.GTournamentSelector)
+ga.setPopulationSize(50)
+ga.setGenerations(100000000)
+ga.setMutationRate(0.05)
 ga.setCrossoverRate(0.8)
 ga.stepCallback.set(callback)
 ga.setMinimax(0) 
