@@ -8,11 +8,13 @@ from copy import deepcopy
 # Initializators
 ####
 def CandidateInitializator(genome, **args):
-  genome.bg = randrgb()
+  #genome.bg = randrgb()
+  genome.bg = (0,0,0)
   genome.polygons = []
   #for i in xrange(0): #TODO: Better way of deciding start number
-  for i in xrange(100): #TODO: Better way of deciding start number
+  for i in xrange(10): #TODO: Better way of deciding start number
     t = randpolygon(genome.width, genome.height)
+    #t = sample_polygon(genome) 
     genome.polygons.append(t)
     
 ####
@@ -22,6 +24,21 @@ def AddPolygon(genome, **args):
   """ Add a random polygon """
   if Util.randomFlipCoin(args['pmut']):
     t = randpolygon(genome.width, genome.height)
+    genome.polygons.append(t)
+    return 1
+  else:
+    return 0
+
+def sample_polygon(genome):
+  t = randpolygon(genome.width, genome.height)
+  color = genome.target.target.getpixel(t.midpoint)
+  t.color = tuple( c / 255.0 for c in color)
+  return t
+
+def SamplePolygon(genome, **args):
+  """ Add a random polygon """
+  if Util.randomFlipCoin(args['pmut']):
+    t = sample_polygon(genome)
     genome.polygons.append(t)
     return 1
   else:
@@ -92,7 +109,7 @@ def Reshuffle(genome, **args):
 
 def Transpose(genome, **args):
   """Transpose two polygons"""
-  if Util.randomFlipCoin(args['pmut']):
+  if Util.randomFlipCoin(args['pmut']) and len(genome.polygons) >= 2:
     i,j = sample(xrange(len(genome.polygons)),2)
     genome.polygons[i], genome.polygons[j] = genome.polygons[j], genome.polygons[i]
     return 1
@@ -180,6 +197,9 @@ def SinglePointCrossover(genome, **args):
   sister.resetStats()
   brother.resetStats()
   
+  if len(sister.polygons) == 0 or len(brother.polygons) == 0:
+    return (sister,brother)
+
   sis_i = choice(xrange(len(sister.polygons)))
   bro_i = choice(xrange(len(brother.polygons)))
 

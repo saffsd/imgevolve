@@ -24,8 +24,8 @@ class ShowIntermediate:
     if self.count % 10 == 0:
       best = ga.bestIndividual()
       best.savefig(os.path.join(path,'best%04d.png' % self.count))
-      if self.count % 50 == 0:
-        best.savediff(self.target, os.path.join(path, 'diff%04d.png' % self.count))
+      #if self.count % 50 == 0:
+      #  best.savediff(self.target, os.path.join(path, 'diff%04d.png' % self.count))
     self.count += 1
     return False
     
@@ -35,26 +35,28 @@ def main(path, image):
 
   callback = ShowIntermediate(target)
 
-  eval_func = target.rms_difference
+  #eval_func = target.rms_difference
   #eval_func = target.abs_difference
-  #eval_func = target.percept_difference
+  eval_func = target.percept_difference
+  #eval_func = target.square_difference
 
   # Initialize genome
   w, h = target.target.size
-  genome = Candidate(w, h)
+  genome = Candidate(w, h, target)
   genome.evaluator.set(eval_func)
   genome.initializator.set(genetic_operators.CandidateInitializator)
-  genome.mutator.add(genetic_operators.AddPolygon)
-  genome.mutator.add(genetic_operators.RemovePolygon)
-  genome.mutator.add(genetic_operators.Reshuffle)
+  #genome.mutator.add(genetic_operators.AddPolygon)
+  #genome.mutator.add(genetic_operators.SamplePolygon)
+  #genome.mutator.add(genetic_operators.RemovePolygon)
+  #genome.mutator.add(genetic_operators.Reshuffle)
   genome.mutator.add(genetic_operators.Transpose)
   genome.mutator.add(genetic_operators.AdjustPolygon)
-  genome.mutator.add(genetic_operators.AdjustBackground)
+  #genome.mutator.add(genetic_operators.AdjustBackground)
   genome.mutator.add(genetic_operators.ChangePolygonOrder)
   genome.mutator.add(genetic_operators.ChangePolygonColor)
   genome.crossover.set(genetic_operators.SwapOne)
-  genome.crossover.add(genetic_operators.SinglePointCrossover)
-  genome.crossover.add(genetic_operators.AverageBackground)
+  #genome.crossover.add(genetic_operators.SinglePointCrossover)
+  #genome.crossover.add(genetic_operators.AverageBackground)
 
 
   ga = GSimpleGA(genome)

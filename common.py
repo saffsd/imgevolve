@@ -2,9 +2,12 @@ from PIL import Image, ImageChops
 import numpy
 import cairo
 import random
+import pdb
 from copy import deepcopy
 from pyevolve.GenomeBase import GenomeBase
 from pyevolve import Util
+
+numpy.seterr(all='raise')
 
 class TargetImage:
   """
@@ -13,7 +16,14 @@ class TargetImage:
   def __init__(self, path):
     self.path = path
     self.target = Image.open(self.path).convert('RGBA')
-    self.target_im_array = numpy.asarray(self.target)
+    data = numpy.asarray(self.target).astype('int32')
+    b = data[:,:,0]
+    g = data[:,:,1]
+    r = data[:,:,2]
+    a = data[:,:,3]
+    self.target_im_array = numpy.dstack((r,g,b,a))
+    #Util.set_normal_term()
+    #pdb.set_trace()
 
 
   def rms_difference(self, candidate):
@@ -30,6 +40,14 @@ class TargetImage:
     diff = candidate_arr - self.target_im_array
     return numpy.sum(numpy.abs(diff)) 
 
+  def square_difference(self, candidate):
+    candidate_arr = candidate.asarray()
+    diff = (candidate_arr - self.target_im_array)[:,:,:3]
+    #Util.set_normal_term()
+    #import pdb;pdb.set_trace()
+    return numpy.sum(diff * diff)
+    
+
   def percept_difference(self, candidate):
     """
     Based on http://www.compuphase.com/cmetric.htm
@@ -37,21 +55,16 @@ class TargetImage:
     #t_arr = numpy.vstack(self.target_im_array)
     c_arr = candidate.asarray()
     t_arr = self.target_im_array
-    diff = (c_arr - t_arr).astype('uint32')
+    diff = (c_arr - t_arr)
     r = diff[:,:,0]
     g = diff[:,:,1]
     b = diff[:,:,2]
-    rmean = (c_arr[:,:,0] + t_arr[:,:,0]).astype('uint32') / 2
+    rmean = (c_arr[:,:,0] + t_arr[:,:,0]) / 2
     out = numpy.sqrt((((512+rmean)*r*r)>>8) + 4*g*g + (((767-rmean)*b*b)>>8));
     #return numpy.sum(out)
     #Util.set_normal_term()
     #import pdb;pdb.set_trace()
     return numpy.sqrt(numpy.mean(out*out))
-
-def color_distance(rgba1, rgba2):
-  r,g,b,a = rgba1 - rgba2
-  rmean = (rgba1[0] + rgba2[0]) / 2
-  return numpy.sqrt((((512+rmean)*r*r)>>8) + 4*g*g + (((767-rmean)*b*b)>>8));
 
 class Polygon:
   def __init__(self, vertices, color):
@@ -75,11 +88,12 @@ class MyContext(cairo.Context):
     self.fill()
 
 class Candidate(GenomeBase):
-  def __init__(self, width, height, bg=(0,0,0)):
+  def __init__(self, width, height, target, bg=(0,0,0)):
     GenomeBase.__init__(self)
     self.bg = bg 
     self.width = width
     self.height = height
+    self.target = target
     self.polygons = []
 
   def __repr__(self):
@@ -94,6 +108,7 @@ class Candidate(GenomeBase):
     GenomeBase.copy(self, g)
     g.bg = self.bg
     g.polygons = deepcopy(self.polygons)
+    g.target = self.target
 
   def clone(self):
     newcopy = Candidate(self.width, self.height, self.bg)
@@ -125,6 +140,6 @@ class Candidate(GenomeBase):
   def asarray(self):
     surface = self.cairo_surface()
     buf = surface.get_data()
-    candidate_arr = numpy.frombuffer(buf, numpy.uint8)
+    candidate_arr = numpy.frombuffer(buf, numpy.uint8).astype('int32')
     candidate_arr.shape = (self.width, self.height, 4)
     return candidate_arr
