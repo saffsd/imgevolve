@@ -8,13 +8,13 @@ from copy import deepcopy
 # Initializators
 ####
 def CandidateInitializator(genome, **args):
-  #genome.bg = randrgb()
-  genome.bg = (0,0,0)
+  genome.bg = randrgb()
+  #genome.bg = (0,0,0)
   genome.polygons = []
   #for i in xrange(0): #TODO: Better way of deciding start number
-  for i in xrange(10): #TODO: Better way of deciding start number
-    t = randpolygon(genome.width, genome.height)
-    #t = sample_polygon(genome) 
+  for i in xrange(20): #TODO: Better way of deciding start number
+    #t = randpolygon(genome.width, genome.height)
+    t = sample_polygon(genome) 
     genome.polygons.append(t)
     
 ####
