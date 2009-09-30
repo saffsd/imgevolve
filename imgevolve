@@ -80,8 +80,7 @@ def main(options, image, outfile):
   #eval_func = target.square_difference
 
   # Initialize genome
-  w, h = target.target.size
-  genome = Candidate(w, h, target)
+  genome = Candidate(target)
   genome.setParams( background=False
                   , poly_count=options.init_poly
                   , vert_min = options.vert_min
@@ -95,12 +94,10 @@ def main(options, image, outfile):
   genome.mutator.add(genetic_operators.Reshuffle)
   genome.mutator.add(genetic_operators.Transpose)
   genome.mutator.add(genetic_operators.AdjustPolygon)
-  #genome.mutator.add(genetic_operators.AdjustBackground)
   genome.mutator.add(genetic_operators.ChangePolygonOrder)
   genome.mutator.add(genetic_operators.ChangePolygonColor)
   genome.crossover.set(genetic_operators.SwapOne)
   #genome.crossover.add(genetic_operators.SinglePointCrossover)
-  #genome.crossover.add(genetic_operators.AverageBackground)
 
   # Initialize GA engine
   ga = ImgEvolveGA(genome)

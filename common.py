@@ -92,11 +92,9 @@ class MyContext(cairo.Context):
     self.fill()
 
 class Candidate(GenomeBase):
-  def __init__(self, width, height, target, bg = None):
+  def __init__(self, target):
     GenomeBase.__init__(self)
-    self.bg = bg 
-    self.width = width
-    self.height = height
+    self.width, self.height = target.target.size
     self.target = target
     self.polygons = []
 
@@ -110,7 +108,6 @@ class Candidate(GenomeBase):
   def copy(self, g):
     """Copy method required by pyevolve"""
     GenomeBase.copy(self, g)
-    g.bg = self.bg
     #g.polygons = deepcopy(self.polygons)
     # We don't copy the actual polygons because they can be shared. 
     # We just have to remember to treat polygons as immutable.
@@ -118,7 +115,7 @@ class Candidate(GenomeBase):
     g.target = self.target
 
   def clone(self):
-    newcopy = Candidate(self.width, self.height, self.bg)
+    newcopy = Candidate(self.target)
     self.copy(newcopy)
     return newcopy
 
@@ -174,9 +171,6 @@ class Candidate(GenomeBase):
     surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, w, h)
     ctx = MyContext(surface)
     # Only paint background if background is given
-    if self.bg is not None:
-      ctx.set_source_rgb(*self.bg)
-      ctx.paint()
     for p in self.polygons:
       ctx.polygon(p)
     return surface

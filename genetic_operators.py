@@ -143,46 +143,11 @@ def mutatecolor(color):
     r.append(new_c)
   return tuple(r)
 
-def AdjustBackground(genome, **args):
-  """Adjust the background color"""
-  if Util.randomFlipCoin(args['pmut']):
-    bg = genome.bg
-    genome.bg = mutatecolor(bg)
-    return 1
-  else:
-    return 0
-  pass
-
-def ReplaceBackground(genome, **args):
-  if Util.randomFlipCoin(args['pmut']):
-    genome.bg = randrgb()
-    return 1
-  else:
-    return 0 
-  
-
 ####
 # Crossover
 ####
 def color_mean(color1, color2):
   return tuple( (c1 + c2) / 2 for c1,c2 in zip(color1, color2))
-
-def AverageBackground(genome, **args):
-  """Average the background"""
-  gMom = args['mom']
-  gDad = args['dad']
-
-  sister = gMom.clone()
-  brother = gDad.clone()
-  sister.resetStats()
-  brother.resetStats()
-  
-  cm = color_mean(gMom.bg, gDad.bg)
-  sister.bg = cm
-  brother.bg = cm
-
-  return (sister, brother)
-  
 
 def SwapOne(genome, **args):
   """ Exchange some genetic material """
