@@ -74,6 +74,9 @@ class Polygon:
   def __str__(self):
     return "<Polygon %d vertices, color: %s>" % (len(self.vertices), self.color)
 
+  def copy(self):
+    return deepcopy(self)
+
   @property
   def midpoint(self):
     midpoint = tuple(sum(dim) / len(dim) for dim in zip(*self.vertices))
@@ -108,8 +111,10 @@ class Candidate(GenomeBase):
     """Copy method required by pyevolve"""
     GenomeBase.copy(self, g)
     g.bg = self.bg
-    g.polygons = deepcopy(self.polygons)
-    #g.polygons = self.polygons[:]
+    #g.polygons = deepcopy(self.polygons)
+    # We don't copy the actual polygons because they can be shared. 
+    # We just have to remember to treat polygons as immutable.
+    g.polygons = self.polygons[:]
     g.target = self.target
 
   def clone(self):
@@ -180,5 +185,5 @@ class Candidate(GenomeBase):
     surface = self.cairo_surface()
     buf = surface.get_data()
     candidate_arr = numpy.frombuffer(buf, numpy.uint8).astype('int32')
-    candidate_arr.shape = (self.width, self.height, 4)
+    candidate_arr.shape = (self.height, self.width, 4)
     return candidate_arr

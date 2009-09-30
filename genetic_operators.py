@@ -76,7 +76,7 @@ def AdjustPolygon(genome, **args):
   mut_count = 0
   for i in range(len(genome.polygons)):
     if Util.randomFlipCoin(args['pmut']):
-      t = deepcopy(genome.polygons[i])
+      t = genome.polygons[i].copy()
       for v in xrange(len(t.vertices)):
         for dim in [0,1]:
           #t.vertices[v][dim] += randint(-2,2)
@@ -92,7 +92,7 @@ def ChangePolygonOrder(genome, **args):
   vert_max = genome.getParam('vert_max')
   for i in range(len(genome.polygons)):
     if Util.randomFlipCoin(args['pmut']):
-      t = genome.polygons[i]
+      t = genome.polygons[i].copy()
       pos = choice(xrange(len(t.vertices)))
       if randint(0,1):
         if len(t.vertices) < vert_max:
@@ -112,7 +112,7 @@ def ChangePolygonColor(genome, **args):
   mut_count = 0
   for i in range(len(genome.polygons)):
     if Util.randomFlipCoin(args['pmut']):
-      t = deepcopy(genome.polygons[i])
+      t = genome.polygons[i].copy()
       t.color = mutatecolor(t.color)
       genome.polygons[i] = t
   return mut_count

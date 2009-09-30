@@ -169,10 +169,12 @@ if __name__ == "__main__":
 
   if options.output_file is None:
     base, ext = os.path.splitext(image)
-    outfile = base + '_evolved' + ext
+    outfile = base + '_evolved.png'
   else:
     outfile = options.output_file
 
+  from pyevolve import Util
+  Util.set_normal_term()
   if options.profile:
     import cProfile
     cProfile.run('main(options, image, outfile)', image+'.profile')
