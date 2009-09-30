@@ -144,7 +144,7 @@ if __name__ == "__main__":
   parser = OptionParser(usage = '%prog [options] input')
 
   parser.add_option('-p', action='store_true', dest='profile', help='Enable Profiling')
-  parser.add_option('--eval', type='string', dest='eval_func', default='rms', help='Evaluation function: [(rms),abs,percept,square]'
+  parser.add_option('--eval', type='string', dest='eval_func', default='rms', help='Evaluation function: [(rms),abs,percept,square]')
 
   group = OptionGroup(parser, 'Output Options')
   group.add_option('-o', type='string', dest='output_file', help='File to write final evolved image to')
