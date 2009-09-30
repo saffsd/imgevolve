@@ -38,7 +38,7 @@ class TargetImage:
   def abs_difference(self, candidate):
     candidate_arr = candidate.asarray()
     diff = candidate_arr - self.target_im_array
-    return numpy.sum(numpy.abs(diff)) 
+    return numpy.sum(numpy.abs(diff))
 
   def square_difference(self, candidate):
     candidate_arr = candidate.asarray()

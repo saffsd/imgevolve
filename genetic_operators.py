@@ -71,7 +71,7 @@ def RemovePolygon(genome, **args):
     return 0
 
 def AdjustPolygon(genome, **args):
-  """ Modify a random polygon"""
+  """ Move the vertexes of a random polygon"""
   if len(genome.polygons) == 0: return 0
   mut_count = 0
   for i in range(len(genome.polygons)):
@@ -149,6 +149,18 @@ def mutatecolor(color):
 def color_mean(color1, color2):
   return tuple( (c1 + c2) / 2 for c1,c2 in zip(color1, color2))
 
+#http://gnosis.cx/publish/programming/charming_python_b13.html
+def weave(*iterables):
+    "Intersperse several iterables, until all are exhausted"
+    iterables = map(iter, iterables)
+    while iterables:
+        for i, it in enumerate(iterables):
+            try:
+                yield it.next()
+            except StopIteration:
+                del iterables[i]
+
+
 def SwapOne(genome, **args):
   """ Exchange some genetic material """
   gMom = args['mom']
@@ -170,25 +182,21 @@ def SwapOne(genome, **args):
   brother.polygons[bro_i] = temp
   return (sister, brother)
 
-def SinglePointCrossover(genome, **args):
-  """ Exchange some genetic material """
+def Redistribute(genome, **args):
+  """Randomly redistribute the genetic material of the parents into
+  the children"""
   gMom = args['mom']
   gDad = args['dad']
 
-  sister = gMom.clone()
-  brother = gDad.clone()
-  sister.resetStats()
-  brother.resetStats()
+  if len(gMom.polygons) == 0 or len(gDad.polygons) == 0: return (gMom,gDad)
+
+  children = (gMom.clone(), gDad.clone())
+  for c in children:
+    c.resetStats()
+    c.polygons = []
+
+  for poly in weave(gMom.polygons, gDad.polygons):
+    children[randint(0,1)].polygons.append(poly)
   
-  if len(sister.polygons) == 0 or len(brother.polygons) == 0:
-    return (sister,brother)
-
-  sis_i = choice(xrange(len(sister.polygons)))
-  bro_i = choice(xrange(len(brother.polygons)))
-
-  sis_new = sister.polygons[:sis_i] + brother.polygons[bro_i:]
-  bro_new = brother.polygons[:bro_i] + sister.polygons[sis_i:]
-  sister.polygons = sis_new
-  brother.polygons = bro_new
-  return (sister, brother)
+  return children
 
