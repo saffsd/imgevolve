@@ -80,6 +80,7 @@ class Polygon:
     return midpoint
 
 class MyContext(cairo.Context):
+
   def polygon(self, p):
     self.set_source_rgba(*p.color)
     self.move_to(*p.vertices[0])
@@ -108,6 +109,7 @@ class Candidate(GenomeBase):
     GenomeBase.copy(self, g)
     g.bg = self.bg
     g.polygons = deepcopy(self.polygons)
+    #g.polygons = self.polygons[:]
     g.target = self.target
 
   def clone(self):
@@ -117,6 +119,41 @@ class Candidate(GenomeBase):
 
   def savefig(self, filename):
     surface = self.cairo_surface()
+    surface.write_to_png(filename)
+
+  def saveoutline(self, filename):
+    w, h = self.width, self.height
+    poly_count = len(self.polygons)
+
+    surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 3*w, 3*h)
+    ctx = MyContext(surface)
+    # White background
+    ctx.set_source_rgb(1,1,1)
+    ctx.paint()
+    # Box for rendered area
+    ctx.set_source_rgba(0,0,0,1)
+    ctx.rectangle(w,h,w,h)
+    ctx.stroke()
+    # Draw the rear polygons first
+    for i,p in enumerate(reversed(self.polygons)):
+      # The further back the polygon, the thinner its line
+      weight = 0.5 + (float(i+1) / poly_count) * 0.5
+      ctx.set_line_width(weight)
+      r,g,b,a = p.color
+      ctx.set_source_rgb(r,g,b)
+
+      x,y = p.vertices[0]
+      x += w
+      y += h
+      ctx.move_to(x,y)
+      for v in p.vertices[1:]:
+        x,y = v
+        x += w
+        y += h
+        ctx.line_to(x,y)
+
+      ctx.close_path()
+      ctx.stroke()
     surface.write_to_png(filename)
 
   def savediff(self, target, filename):

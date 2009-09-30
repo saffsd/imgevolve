@@ -17,7 +17,11 @@ def randrgba():
   a = uniform(0.0,1.0)
   return (r,g,b,a)
 
-def randpolygon(width, height):
-  vertices = [ randpoint(width, height) for i in range(randint(3,6)) ]
+def randpolygon(genome):
+  v_min = genome.getParam('vert_min')
+  v_max = genome.getParam('vert_max')
+  width = genome.width
+  height = genome.height
+  vertices = [ randpoint(width, height) for i in range(randint(v_min,v_max)) ]
   color = randrgba()
   return Polygon(vertices, color)

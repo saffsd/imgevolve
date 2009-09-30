@@ -5,7 +5,7 @@ import random
 from copy import deepcopy
 
 def sample_polygon(genome):
-  t = randpolygon(genome.width, genome.height)
+  t = randpolygon(genome)
   color = genome.target.target.getpixel(t.midpoint)
   t.color = tuple( c / 255.0 for c in color)
   return t
@@ -22,7 +22,7 @@ def RandomPolygons(genome):
   initialPoly = genome.getParam('poly_count')
   genome.polygons = []
   for i in range(initialPoly):
-    t = randpolygon(genome.width, genome.height)
+    t = randpolygon(genome)
     #t = sample_polygon(genome) 
     genome.polygons.append(t)
 
@@ -45,7 +45,7 @@ def SamplePolygons(genome):
 def AddPolygon(genome, **args):
   """ Add a random polygon """
   if Util.randomFlipCoin(args['pmut']):
-    t = randpolygon(genome.width, genome.height)
+    t = randpolygon(genome)
     genome.polygons.append(t)
     return 1
   else:
