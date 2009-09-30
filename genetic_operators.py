@@ -4,16 +4,38 @@ from random import randint, uniform, choice, shuffle, sample
 import random
 from copy import deepcopy
 
+def sample_polygon(genome):
+  t = randpolygon(genome.width, genome.height)
+  color = genome.target.target.getpixel(t.midpoint)
+  t.color = tuple( c / 255.0 for c in color)
+  return t
+
 ####
 # Initializators
 ####
-def CandidateInitializator(genome, **args):
-  genome.bg = randrgb()
-  #genome.bg = (0,0,0)
+def RandomPolygons(genome):
+  """
+  Initialize the individual with a set of completely random polygons
+  """
+  if genome.getParam('background'):
+    genome.bg = randrgb()
+  initialPoly = genome.getParam('poly_count')
   genome.polygons = []
-  #for i in xrange(0): #TODO: Better way of deciding start number
-  for i in xrange(20): #TODO: Better way of deciding start number
-    #t = randpolygon(genome.width, genome.height)
+  for i in range(initialPoly):
+    t = randpolygon(genome.width, genome.height)
+    #t = sample_polygon(genome) 
+    genome.polygons.append(t)
+
+def SamplePolygons(genome):
+  """
+  Initialize the individual with a set of polygons whose color is 
+  sampled from the image itself
+  """
+  if genome.getParam('background'):
+    genome.bg = randrgb()
+  initialPoly = genome.getParam('poly_count')
+  genome.polygons = []
+  for i in range(initialPoly):
     t = sample_polygon(genome) 
     genome.polygons.append(t)
     
@@ -28,12 +50,6 @@ def AddPolygon(genome, **args):
     return 1
   else:
     return 0
-
-def sample_polygon(genome):
-  t = randpolygon(genome.width, genome.height)
-  color = genome.target.target.getpixel(t.midpoint)
-  t.color = tuple( c / 255.0 for c in color)
-  return t
 
 def SamplePolygon(genome, **args):
   """ Add a random polygon """
@@ -72,16 +88,18 @@ def ChangePolygonOrder(genome, **args):
   """ Randomly add or remove a vertex to the polygon """ 
   if len(genome.polygons) == 0: return 0
   mut_count = 0
+  vert_min = genome.getParam('vert_min')
+  vert_max = genome.getParam('vert_max')
   for i in range(len(genome.polygons)):
     if Util.randomFlipCoin(args['pmut']):
       t = genome.polygons[i]
       pos = choice(xrange(len(t.vertices)))
       if randint(0,1):
-        if len(t.vertices) < 6:
+        if len(t.vertices) < vert_max:
           t.vertices.insert(pos, randpoint(genome.width, genome.height))
           mut_count += 1
       else:
-        if len(t.vertices) > 3:
+        if len(t.vertices) > vert_min:
           del t.vertices[pos]
           mut_count += 1
       genome.polygons[i] = t

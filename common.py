@@ -88,7 +88,7 @@ class MyContext(cairo.Context):
     self.fill()
 
 class Candidate(GenomeBase):
-  def __init__(self, width, height, target, bg=(0,0,0)):
+  def __init__(self, width, height, target, bg = None):
     GenomeBase.__init__(self)
     self.bg = bg 
     self.width = width
@@ -131,8 +131,10 @@ class Candidate(GenomeBase):
     w, h = self.width, self.height
     surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, w, h)
     ctx = MyContext(surface)
-    ctx.set_source_rgb(*self.bg)
-    ctx.paint()
+    # Only paint background if background is given
+    if self.bg is not None:
+      ctx.set_source_rgb(*self.bg)
+      ctx.paint()
     for p in self.polygons:
       ctx.polygon(p)
     return surface
