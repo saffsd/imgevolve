@@ -1,11 +1,14 @@
 from PIL import Image, ImageChops
 import numpy
 import cairo
-import random
 import pdb
+import math
+import os
 from copy import deepcopy
 from pyevolve.GenomeBase import GenomeBase
 from pyevolve import Util
+from rand import randpoint, randrgba
+from random import uniform, randint, choice, gauss
 
 numpy.seterr(all='raise')
 
@@ -66,6 +69,59 @@ class TargetImage:
     #import pdb;pdb.set_trace()
     return numpy.sqrt(numpy.mean(out*out))
 
+class Ellipse:
+  desc = 'Ellipse'
+  def __init__(self, x, y, width, height, angle, color):
+    """
+    x      - center x
+    y      - center y
+    width  - width of ellipse  (in x direction when angle=0)
+    height - height of ellipse (in y direction when angle=0)
+    angle  - angle in radians to rotate, clockwise
+    """
+    self.x = x
+    self.y = y
+    self.width = width
+    self.height = height
+    self.angle = angle
+    self.color = color
+
+  def __str__(self):
+    return "<Ellipse, color: %s>" % str(self.color)
+
+
+  def copy(self):
+    return deepcopy(self)
+
+  @staticmethod
+  def random(genome):
+    x,y = randpoint(genome.width,genome.height)
+    width = uniform(0.0,1.0) * genome.width 
+    height = uniform(0.0,1.0) * genome.height 
+    angle = randint(0,360)
+    color = randrgba()
+    return Ellipse(x,y,width,height,angle,color)
+
+  def mutate(self, genome):
+    r = self.copy()
+    r.x += gauss(0, 10)
+    r.y += gauss(0, 10)
+    r.width += gauss(0, 10)
+    r.height += gauss(0, 10)
+    r.angle += int(gauss(0,10))
+    return r
+
+  # adapted from http://lists.cairographics.org/archives/cairo/2006-April/006801.html
+  def render(self, ctx):
+    ctx.save()
+    ctx.translate(self.x, self.y)
+    ctx.rotate(self.angle)
+    ctx.scale(self.width / 2.0, self.height / 2.0)
+    ctx.arc(0.0, 0.0, 1.0, 0.0, 2.0 * math.pi)
+    ctx.restore()
+    ctx.set_source_rgba(*self.color)
+    ctx.fill()
+
 class Polygon:
   def __init__(self, vertices, color):
     self.vertices = vertices
@@ -74,44 +130,79 @@ class Polygon:
   def __str__(self):
     return "<Polygon %d vertices, color: %s>" % (len(self.vertices), self.color)
 
+  @property
+  def desc(self):
+    return '%d-gon' % len(self.vertices)
+
   def copy(self):
     return deepcopy(self)
 
-  @property
-  def midpoint(self):
-    midpoint = tuple(sum(dim) / len(dim) for dim in zip(*self.vertices))
-    return midpoint
+  def mut_vertices(self, genome):
+    v = choice(self.vertices)
+    for dim in [0,1]:
+      v[dim] += gauss(0,10)
 
-class MyContext(cairo.Context):
+  def mut_order(self, genome):
+    vert_min = genome.getParam('vert_min')
+    vert_max = genome.getParam('vert_max')
+    pos = choice(xrange(len(self.vertices)))
+    if randint(0,1):
+      if len(self.vertices) < vert_max:
+            self.vertices.insert(pos, randpoint(genome.width, genome.height))
+    else:
+      if len(self.vertices) > vert_min:
+        del self.vertices[pos]
 
-  def polygon(self, p):
-    self.set_source_rgba(*p.color)
-    self.move_to(*p.vertices[0])
-    for v in p.vertices[1:]:
-      self.line_to(*v)
-    self.fill()
+  def mutate(self, genome):
+    """ 
+    Return a mutated copy of this polygon
+    This must be a copy because polygons may be shared by instances
+    """
+    r = self.copy()
+    possible_mut =\
+      [ r.mut_vertices
+      , r.mut_order
+      ]
+    choice(possible_mut)(genome)
+    return r
+
+
+  @staticmethod
+  def random(genome):
+    v_min = genome.getParam('vert_min')
+    v_max = genome.getParam('vert_max')
+    width = genome.width
+    height = genome.height
+    vertices = [ randpoint(width, height) for i in range(randint(v_min,v_max)) ]
+    color = randrgba()
+    return Polygon(vertices, color)
+
+  def render(self, ctx):
+    ctx.set_source_rgba(*self.color)
+    ctx.move_to(*self.vertices[0])
+    for v in self.vertices[1:]:
+      ctx.line_to(*v)
+    ctx.fill()
+
 
 class Candidate(GenomeBase):
   def __init__(self, target):
     GenomeBase.__init__(self)
     self.width, self.height = target.target.size
     self.target = target
-    self.polygons = []
+    self.shapes= []
 
   def __repr__(self):
     r = GenomeBase.__repr__(self)
     r += "Polygons:\n"
-    for t in self.polygons:
+    for t in self.shapes:
       r += '\t' + str(t) + '\n'
     return r
 
   def copy(self, g):
     """Copy method required by pyevolve"""
     GenomeBase.copy(self, g)
-    #g.polygons = deepcopy(self.polygons)
-    # We don't copy the actual polygons because they can be shared. 
-    # We just have to remember to treat polygons as immutable.
-    g.polygons = self.polygons[:]
+    g.shapes = self.shapes[:]
     g.target = self.target
 
   def clone(self):
@@ -119,49 +210,21 @@ class Candidate(GenomeBase):
     self.copy(newcopy)
     return newcopy
 
-  def savefig(self, filename):
-    surface = self.cairo_surface()
-    surface.write_to_png(filename)
-
-  def savesvg(self, filename):
+  def save(self, filename):
+    """
+    Render this candidate. Autodetect PNG or SVG
+    """
+    ext = os.path.splitext(filename)[1].lower()
     w, h = self.width, self.height
-    surface = cairo.SVGSurface(open(filename,'w'), w, h)
-    self.cairo_draw(surface)
-
-  def saveoutline(self, filename):
-    w, h = self.width, self.height
-    poly_count = len(self.polygons)
-
-    surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 3*w, 3*h)
-    ctx = MyContext(surface)
-    # White background
-    ctx.set_source_rgb(1,1,1)
-    ctx.paint()
-    # Box for rendered area
-    ctx.set_source_rgba(0,0,0,1)
-    ctx.rectangle(w,h,w,h)
-    ctx.stroke()
-    # Draw the rear polygons first
-    for i,p in enumerate(reversed(self.polygons)):
-      # The further back the polygon, the thinner its line
-      weight = 0.5 + (float(i+1) / poly_count) * 0.5
-      ctx.set_line_width(weight)
-      r,g,b,a = p.color
-      ctx.set_source_rgb(r,g,b)
-
-      x,y = p.vertices[0]
-      x += w
-      y += h
-      ctx.move_to(x,y)
-      for v in p.vertices[1:]:
-        x,y = v
-        x += w
-        y += h
-        ctx.line_to(x,y)
-
-      ctx.close_path()
-      ctx.stroke()
-    surface.write_to_png(filename)
+    if ext == '.svg':
+      surface = cairo.SVGSurface(open(filename,'w'), w, h)
+      self.cairo_draw(surface)
+    elif ext == '.png':
+      surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, w, h)
+      self.cairo_draw(surface)
+      surface.write_to_png(filename)
+    else:
+      raise ValueError, "Unknown output format for final output: %s"% ext
 
   def savediff(self, target, filename):
     surf = self.asarray()
@@ -172,19 +235,21 @@ class Candidate(GenomeBase):
     im.save(filename)
 
   def cairo_draw(self, surface):
-    ctx = MyContext(surface)
-    for p in self.polygons:
-      ctx.polygon(p)
+    ctx = cairo.Context(surface)
+    for s in self.shapes:
+      s.render(ctx)
 
-  def cairo_surface(self):
+  def asarray(self):
     w, h = self.width, self.height
     surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, w, h)
     self.cairo_draw(surface)
-    return surface
-
-  def asarray(self):
-    surface = self.cairo_surface()
     buf = surface.get_data()
     candidate_arr = numpy.frombuffer(buf, numpy.uint8).astype('int32')
     candidate_arr.shape = (self.height, self.width, 4)
     return candidate_arr
+
+shape_generators =\
+  [ Ellipse.random
+  , Polygon.random
+  ]
+

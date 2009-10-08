@@ -1,135 +1,83 @@
 import pyevolve.Util as Util
-from rand import randpolygon, randrgb, randpoint
+from rand import randrgb, randpoint
 from random import randint, uniform, choice, shuffle, sample
 import random
 from copy import deepcopy
+from common import shape_generators
 
-def sample_polygon(genome):
-  t = randpolygon(genome)
-  color = genome.target.target.getpixel(t.midpoint)
-  t.color = tuple( c / 255.0 for c in color)
-  return t
-
+def randshape(genome):
+  return random.choice(shape_generators)(genome)
 ####
 # Initializators
 ####
-def RandomPolygons(genome):
+def RandomShapes(genome):
   """
-  Initialize the individual with a set of completely random polygons
+  Initialize the individual with a set of completely random shapes
   """
-  if genome.getParam('background'):
-    genome.bg = randrgb()
   initialPoly = genome.getParam('poly_count')
-  genome.polygons = []
+  genome.shapes = []
   for i in range(initialPoly):
-    t = randpolygon(genome)
-    #t = sample_polygon(genome) 
-    genome.polygons.append(t)
+    t = randshape(genome)
+    genome.shapes.append(t)
 
-def SamplePolygons(genome):
-  """
-  Initialize the individual with a set of polygons whose color is 
-  sampled from the image itself
-  """
-  if genome.getParam('background'):
-    genome.bg = randrgb()
-  initialPoly = genome.getParam('poly_count')
-  genome.polygons = []
-  for i in range(initialPoly):
-    t = sample_polygon(genome) 
-    genome.polygons.append(t)
     
 ####
 # Mutators
 ###
-def AddPolygon(genome, **args):
-  """ Add a random polygon """
+def AddShape(genome, **args):
+  """ Add a random shape"""
   if Util.randomFlipCoin(args['pmut']):
-    t = randpolygon(genome)
-    genome.polygons.append(t)
+    t = randshape(genome)
+    genome.shapes.append(t)
     return 1
   else:
     return 0
 
-def SamplePolygon(genome, **args):
-  """ Add a random polygon """
+def RemoveShape(genome, **args):
+  """ Remove a random shape"""
+  if len(genome.shapes) == 0: return 0
   if Util.randomFlipCoin(args['pmut']):
-    t = sample_polygon(genome)
-    genome.polygons.append(t)
-    return 1
-  else:
-    return 0
-  
-def RemovePolygon(genome, **args):
-  """ Remove a random polygon """
-  if len(genome.polygons) == 0: return 0
-  if Util.randomFlipCoin(args['pmut']):
-    index = choice(xrange(len(genome.polygons)))
-    del genome.polygons[index]
+    index = choice(xrange(len(genome.shapes)))
+    del genome.shapes[index]
     return 1
   else:
     return 0
 
-def AdjustPolygon(genome, **args):
+def MutateShape(genome, **args):
   """ Move the vertexes of a random polygon"""
-  if len(genome.polygons) == 0: return 0
+  if len(genome.shapes) == 0: return 0
   mut_count = 0
-  for i in range(len(genome.polygons)):
+  for i in range(len(genome.shapes)):
     if Util.randomFlipCoin(args['pmut']):
-      t = genome.polygons[i].copy()
-      for v in xrange(len(t.vertices)):
-        for dim in [0,1]:
-          #t.vertices[v][dim] += randint(-2,2)
-          t.vertices[v][dim] += random.gauss(0, 10) 
-      genome.polygons[i] = t
+      genome.shapes[i] = genome.shapes[i].mutate(genome)
+      mut_count += 1
   return mut_count
 
-def ChangePolygonOrder(genome, **args):
-  """ Randomly add or remove a vertex to the polygon """ 
-  if len(genome.polygons) == 0: return 0
-  mut_count = 0
-  vert_min = genome.getParam('vert_min')
-  vert_max = genome.getParam('vert_max')
-  for i in range(len(genome.polygons)):
-    if Util.randomFlipCoin(args['pmut']):
-      t = genome.polygons[i].copy()
-      pos = choice(xrange(len(t.vertices)))
-      if randint(0,1):
-        if len(t.vertices) < vert_max:
-          t.vertices.insert(pos, randpoint(genome.width, genome.height))
-          mut_count += 1
-      else:
-        if len(t.vertices) > vert_min:
-          del t.vertices[pos]
-          mut_count += 1
-      genome.polygons[i] = t
-  return mut_count
-  
 
-def ChangePolygonColor(genome, **args):
-  """ Modify polygon color at random """
-  if len(genome.polygons) == 0: return 0
+def ChangeShapeColor(genome, **args):
+  """ Modify shape color at random """
+  if len(genome.shapes) == 0: return 0
   mut_count = 0
-  for i in range(len(genome.polygons)):
+  for i in range(len(genome.shapes)):
     if Util.randomFlipCoin(args['pmut']):
-      t = genome.polygons[i].copy()
+      t = genome.shapes[i].copy()
       t.color = mutatecolor(t.color)
-      genome.polygons[i] = t
+      genome.shapes[i] = t
   return mut_count
 
 def Reshuffle(genome, **args):
-  """Reshuffle the order of the polygons"""
+  """Reshuffle the order of the shapes"""
   if Util.randomFlipCoin(args['pmut']):
-    shuffle(genome.polygons)
+    shuffle(genome.shapes)
     return 1
   else:
     return 0
 
 def Transpose(genome, **args):
-  """Transpose two polygons"""
-  if Util.randomFlipCoin(args['pmut']) and len(genome.polygons) >= 2:
-    i,j = sample(xrange(len(genome.polygons)),2)
-    genome.polygons[i], genome.polygons[j] = genome.polygons[j], genome.polygons[i]
+  """Transpose two shapes"""
+  if Util.randomFlipCoin(args['pmut']) and len(genome.shapes) >= 2:
+    i,j = sample(xrange(len(genome.shapes)),2)
+    genome.shapes[i], genome.shapes[j] = genome.shapes[j], genome.shapes[i]
     return 1
   else:
     return 0
@@ -171,15 +119,15 @@ def SwapOne(genome, **args):
   sister.resetStats()
   brother.resetStats()
   
-  if len(sister.polygons) == 0 or len(brother.polygons) == 0:
+  if len(sister.shapes) == 0 or len(brother.shapes) == 0:
     return (sister,brother)
   
-  sis_i = choice(xrange(len(sister.polygons)))
-  bro_i = choice(xrange(len(brother.polygons)))
+  sis_i = choice(xrange(len(sister.shapes)))
+  bro_i = choice(xrange(len(brother.shapes)))
 
-  temp = sister.polygons[sis_i]
-  sister.polygons[sis_i] = brother.polygons[bro_i]
-  brother.polygons[bro_i] = temp
+  temp = sister.shapes[sis_i]
+  sister.shapes[sis_i] = brother.shapes[bro_i]
+  brother.shapes[bro_i] = temp
   return (sister, brother)
 
 def Redistribute(genome, **args):
@@ -188,15 +136,15 @@ def Redistribute(genome, **args):
   gMom = args['mom']
   gDad = args['dad']
 
-  if len(gMom.polygons) == 0 or len(gDad.polygons) == 0: return (gMom,gDad)
+  if len(gMom.shapes) == 0 or len(gDad.shapes) == 0: return (gMom,gDad)
 
   children = (gMom.clone(), gDad.clone())
   for c in children:
     c.resetStats()
-    c.polygons = []
+    c.shapes = []
 
-  for poly in weave(gMom.polygons, gDad.polygons):
-    children[randint(0,1)].polygons.append(poly)
+  for poly in weave(gMom.shapes, gDad.shapes):
+    children[randint(0,1)].shapes.append(poly)
   
   return children
 

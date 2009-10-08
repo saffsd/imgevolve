@@ -20,7 +20,7 @@ class ImgEvolveGA(GSimpleGA):
   def printStats(self):
     GSimpleGA.printStats(self)
     self.printSimulationRate()
-    self.printPolygonSummary()
+    self.printShapeSummary()
 
   def printSimulationRate(self):
     if not hasattr(self, 'rateinfo'):
@@ -32,21 +32,22 @@ class ImgEvolveGA(GSimpleGA):
     print "\tEvolution rate: %.2f generations/sec" % rate
     self.rateinfo = (self.currentGeneration, now)
     
-  def printPolygonSummary(self):
+  def printShapeSummary(self):
     pop = self.getPopulation()
-    poly_counts = []
-    poly_size = []
+    shape_counts = []
+    shape_type_count = defaultdict(list)
     for ind in pop:
-      poly_count = len(ind.polygons)
-      poly_counts.append(poly_count)
-      for poly in ind.polygons:
-        poly_size.append(len(poly.vertices))
+      shape_counts.append(len(ind.shapes))
+      types = defaultdict(int)
+      for shape in ind.shapes:
+        types[shape.desc] += 1
+      for t in types:
+        shape_type_count[t].append(types[t])
 
-    print "\tPolygon count: %.1f/%.1f/%.1f" % (max(poly_counts), min(poly_counts), mean(poly_counts))
-    print "\tVertex count: %.1f/%.1f/%.1f" % (max(poly_size), min(poly_size), mean(poly_size))
-    dist = defaultdict(int)
-    for i in poly_size: dist[i] += 1
-    print "\tVertex dist: ", ' | '.join('%d:%-4d' % (k, dist[k]) for k in sorted(dist))
+    print "\tShape count: %d/%d/%.1f" % (max(shape_counts), min(shape_counts), mean(shape_counts))
+    for t in sorted(shape_type_count):
+      c = shape_type_count[t]
+      print "\t\t%s: %d/%d/%.1f" % (t, max(c), min(c), mean(c))
     print
     return False
 
@@ -67,8 +68,7 @@ class ShowIntermediate:
   def __call__(self, ga):
     if self.count % self.output_freq == 0:
       best = ga.bestIndividual()
-      best.savefig(os.path.join(self.output_dir,'best%04d.png' % self.count))
-      best.saveoutline(os.path.join(self.output_dir,'outline%04d.png' % self.count))
+      best.save(os.path.join(self.output_dir,'best%04d.png' % self.count))
     self.count += 1
     return False
   
@@ -97,16 +97,16 @@ def main(options, image, outfile):
                   , vert_max = options.vert_max
                   )
   genome.evaluator.set(eval_func)
-  genome.initializator.set(genetic_operators.RandomPolygons)
-  #genome.initializator.set(genetic_operators.SamplePolygons)
-  #genome.mutator.add(genetic_operators.SamplePolygon)
-  genome.mutator.add(genetic_operators.AddPolygon)
-  genome.mutator.add(genetic_operators.RemovePolygon)
+  genome.initializator.set(genetic_operators.RandomShapes)
+  #genome.initializator.set(genetic_operators.SampleShapes)
+  #genome.mutator.add(genetic_operators.SampleShape)
+  genome.mutator.add(genetic_operators.AddShape)
+  genome.mutator.add(genetic_operators.RemoveShape)
   genome.mutator.add(genetic_operators.Reshuffle)
   genome.mutator.add(genetic_operators.Transpose)
-  genome.mutator.add(genetic_operators.AdjustPolygon)
-  genome.mutator.add(genetic_operators.ChangePolygonOrder)
-  genome.mutator.add(genetic_operators.ChangePolygonColor)
+  genome.mutator.add(genetic_operators.MutateShape)
+  #genome.mutator.add(genetic_operators.ChangePolygonOrder)
+  genome.mutator.add(genetic_operators.ChangeShapeColor)
   genome.crossover.set(genetic_operators.SwapOne)
   #genome.crossover.set(genetic_operators.Redistribute)
   #genome.crossover.add(genetic_operators.SinglePointCrossover)
@@ -135,13 +135,7 @@ def main(options, image, outfile):
 
   # Output final image
   best = ga.bestIndividual()
-  ext = os.path.splitext(outfile)[1].lower()
-  if ext == '.svg':
-    best.savesvg(outfile)
-  elif ext == '.png':
-    best.savefig(outfile)
-  else:
-    print "Unknown output format for final output:", ext
+  best.save(outfile)
 
   print "Best individual:"
   print best
@@ -159,10 +153,10 @@ if __name__ == "__main__":
   group.add_option('-n', type='int', dest='output_freq', default=10, help='Frequency between intermediate images (generations)')
   parser.add_option_group(group)
 
-  group = OptionGroup(parser, 'Polygon Parameters')
+  group = OptionGroup(parser, 'Shape Parameters')
   group.add_option('--v_min', type='int', dest='vert_min', default=3, help='Minimum number of vertices')
   group.add_option('--v_max', type='int', dest='vert_max', default=10, help='Maximum number of vertices')
-  group.add_option('--initial', type='int', dest='init_poly', default=50, help='Initial Polygon Count')
+  group.add_option('--initial', type='int', dest='init_poly', default=50, help='Initial Shape Count')
   parser.add_option_group(group)
 
   group = OptionGroup(parser, "GA Parameters")
