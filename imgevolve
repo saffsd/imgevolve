@@ -135,7 +135,14 @@ def main(options, image, outfile):
 
   # Output final image
   best = ga.bestIndividual()
-  best.savefig(outfile)
+  ext = os.path.splitext(outfile)[1].lower()
+  if ext == '.svg':
+    best.savesvg(outfile)
+  elif ext == '.png':
+    best.savefig(outfile)
+  else:
+    print "Unknown output format for final output:", ext
+
   print "Best individual:"
   print best
 
@@ -179,7 +186,7 @@ if __name__ == "__main__":
 
   if options.output_file is None:
     base, ext = os.path.splitext(image)
-    outfile = base + '_evolved.png'
+    outfile = base + '_evolved.svg'
   else:
     outfile = options.output_file
 

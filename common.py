@@ -123,6 +123,11 @@ class Candidate(GenomeBase):
     surface = self.cairo_surface()
     surface.write_to_png(filename)
 
+  def savesvg(self, filename):
+    w, h = self.width, self.height
+    surface = cairo.SVGSurface(open(filename,'w'), w, h)
+    self.cairo_draw(surface)
+
   def saveoutline(self, filename):
     w, h = self.width, self.height
     poly_count = len(self.polygons)
@@ -166,13 +171,15 @@ class Candidate(GenomeBase):
     im = Image.frombuffer("RGBA",(self.width,self.height),diff,"raw","RGBA",0,1)
     im.save(filename)
 
+  def cairo_draw(self, surface):
+    ctx = MyContext(surface)
+    for p in self.polygons:
+      ctx.polygon(p)
+
   def cairo_surface(self):
     w, h = self.width, self.height
     surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, w, h)
-    ctx = MyContext(surface)
-    # Only paint background if background is given
-    for p in self.polygons:
-      ctx.polygon(p)
+    self.cairo_draw(surface)
     return surface
 
   def asarray(self):
