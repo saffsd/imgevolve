@@ -130,7 +130,7 @@ def SwapOne(genome, **args):
   brother.shapes[bro_i] = temp
   return (sister, brother)
 
-def Redistribute(genome, **args):
+def Recombine(genome, **args):
   """Randomly redistribute the genetic material of the parents into
   the children"""
   gMom = args['mom']
@@ -143,8 +143,18 @@ def Redistribute(genome, **args):
     c.resetStats()
     c.shapes = []
 
-  for poly in weave(gMom.shapes, gDad.shapes):
-    children[randint(0,1)].shapes.append(poly)
-  
+  long, short = gMom.shapes, gDad.shapes
+  if len(long) < len(short):
+    long, short = short, long
+
+  i = 0
+  while i < len(short):
+    c = randint(0,1)
+    children[(0,1)[c]].shapes.append(short[i])
+    children[(1,0)[c]].shapes.append(long[i])
+    i += 1
+  while i < len(long):
+    children[0].shapes.append(long[i])
+
   return children
 

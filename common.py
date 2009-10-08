@@ -87,7 +87,7 @@ class Ellipse:
     self.color = color
 
   def __str__(self):
-    return "<Ellipse, color: %s>" % str(self.color)
+    return "<Ellipse center:(%d,%d), color: %s>" % (self.x, self.y, str(self.color))
 
 
   def copy(self):
@@ -102,13 +102,29 @@ class Ellipse:
     color = randrgba()
     return Ellipse(x,y,width,height,angle,color)
 
+  def mut_angle(self, genome):
+    self.angle += int(gauss(0,10))
+    
+  def mut_center(self, genome):
+    self.x += gauss(0,10)
+    self.y += gauss(0,10)
+
+  def mut_size(self, genome):
+    self.width += gauss(0,10)
+    self.height += gauss(0,10)
+
   def mutate(self, genome):
+    """ 
+    Return a mutated copy of this polygon
+    This must be a copy because polygons may be shared by instances
+    """
     r = self.copy()
-    r.x += gauss(0, 10)
-    r.y += gauss(0, 10)
-    r.width += gauss(0, 10)
-    r.height += gauss(0, 10)
-    r.angle += int(gauss(0,10))
+    possible_mut =\
+      [ r.mut_size
+      , r.mut_angle
+      , r.mut_center
+      ]
+    choice(possible_mut)(genome)
     return r
 
   # adapted from http://lists.cairographics.org/archives/cairo/2006-April/006801.html
