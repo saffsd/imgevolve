@@ -155,6 +155,7 @@ def Recombine(genome, **args):
     i += 1
   while i < len(long):
     children[0].shapes.append(long[i])
+    i += 1
 
   return children
 
