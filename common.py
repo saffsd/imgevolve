@@ -12,7 +12,7 @@ from random import uniform, randint, choice, gauss
 
 numpy.seterr(all='raise')
 
-GROWTH_CONST = 50
+GROWTH_CONST = 25
 
 class TargetImage:
   """
@@ -162,20 +162,19 @@ class Polygon:
     for dim in [0,1]:
       v[dim] += gauss(0,GROWTH_CONST)
 
-  def mut_order(self, genome):
-    vert_min = genome.getParam('vert_min')
+  def mut_inc_order(self, genome):
     vert_max = genome.getParam('vert_max')
-    pos = choice(xrange(len(self.vertices)-1))
-    if randint(0,1):
-      if len(self.vertices) < vert_max:
-          #self.vertices.insert(pos, randpoint(genome.width, genome.height))
-          v1 = self.vertices[pos]
-          v2 = self.vertices[pos+1]
-          v = [ (d1 + d2) / 2 + gauss(0,GROWTH_CONST) for d1,d2 in zip(v1,v2) ]
-          self.vertices.insert(pos+1, v)
-    else:
-      if len(self.vertices) > vert_min:
-        del self.vertices[pos]
+    if len(self.vertices) < vert_max:
+      pos = choice(xrange(len(self.vertices)-1))
+      v1,v2 = self.vertices[pos:pos+2]
+      v = [ (d1 + d2) / 2 + gauss(0,GROWTH_CONST) for d1,d2 in zip(v1,v2) ]
+      self.vertices.insert(pos+1, v)
+
+  def mut_dec_order(self, genome):
+    vert_min = genome.getParam('vert_min')
+    if len(self.vertices) > vert_min:
+      pos = choice(xrange(len(self.vertices)))
+      del self.vertices[pos]
 
   def mutate(self, genome):
     """ 
@@ -185,7 +184,8 @@ class Polygon:
     r = self.copy()
     possible_mut =\
       [ r.mut_vertices
-      , r.mut_order
+      , r.mut_inc_order
+      , r.mut_dec_order
       ]
     choice(possible_mut)(genome)
     return r
@@ -199,15 +199,17 @@ class Polygon:
     height = genome.height
 
     num_vertices = randint(v_min, v_max)
-    root = randpoint(width, height)
-    vertices = [root]
-    for i in range(num_vertices - 1):
+    vertices = [randpoint(width, height)]
+    for i in range(2):
       prev = vertices[-1]
       new = [ d + gauss(0,GROWTH_CONST) for d in prev ]
       vertices.append(new)
     #vertices = [ randpoint(width, height) for i in range(randint(v_min,v_max)) ]
     color = randrgba()
-    return Polygon(vertices, color)
+    p = Polygon(vertices, color)
+    for i in range(num_vertices - 3):
+      p.mut_inc_order(genome)
+    return p
 
   def render(self, ctx):
     ctx.set_source_rgba(*self.color)
@@ -223,6 +225,7 @@ class Candidate(GenomeBase):
     self.width, self.height = target.target.size
     self.target = target
     self.shapes= []
+    self.bg=(0,0,0)
 
   def __repr__(self):
     r = GenomeBase.__repr__(self)
@@ -234,6 +237,7 @@ class Candidate(GenomeBase):
   def copy(self, g):
     """Copy method required by pyevolve"""
     GenomeBase.copy(self, g)
+    g.bg = self.bg
     g.shapes = self.shapes[:]
     g.target = self.target
 
@@ -250,10 +254,12 @@ class Candidate(GenomeBase):
     w, h = self.width, self.height
     if ext == '.svg':
       surface = cairo.SVGSurface(open(filename,'w'), w, h)
-      self.cairo_draw(surface)
+      ctx = cairo.Context(surface)
+      self.cairo_draw(ctx)
     elif ext == '.png':
       surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, w, h)
-      self.cairo_draw(surface)
+      ctx = cairo.Context(surface)
+      self.cairo_draw(ctx)
       surface.write_to_png(filename)
     else:
       raise ValueError, "Unknown output format for final output: %s"% ext
@@ -266,15 +272,17 @@ class Candidate(GenomeBase):
     im = Image.frombuffer("RGBA",(self.width,self.height),diff,"raw","RGBA",0,1)
     im.save(filename)
 
-  def cairo_draw(self, surface):
-    ctx = cairo.Context(surface)
+  def cairo_draw(self, ctx):
+    ctx.set_source_rgb(*self.bg)
+    ctx.paint()
     for s in self.shapes:
       s.render(ctx)
 
   def asarray(self):
     w, h = self.width, self.height
     surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, w, h)
-    self.cairo_draw(surface)
+    ctx = cairo.Context(surface)
+    self.cairo_draw(ctx)
     buf = surface.get_data()
     candidate_arr = numpy.frombuffer(buf, numpy.uint8).astype('int32')
     candidate_arr.shape = (self.height, self.width, 4)

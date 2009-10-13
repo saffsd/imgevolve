@@ -90,9 +90,7 @@ class LiveWindow:
       # Create the cairo context
       self.area.window.clear()
       cr = self.area.window.cairo_create()
-      for s in best.shapes:
-        s.render(cr)
-
+      best.cairo_draw(cr)
  
     
 
@@ -129,10 +127,13 @@ def main(options, image, outfile):
   genome.mutator.add(genetic_operators.MutateShape)
   #genome.mutator.add(genetic_operators.ChangePolygonOrder)
   genome.mutator.add(genetic_operators.ChangeShapeColor)
+  genome.mutator.add(genetic_operators.AdjustBackground)
+  genome.mutator.add(genetic_operators.ReplaceBackground)
   #genome.crossover.set(genetic_operators.SwapOne)
   #genome.crossover.set(genetic_operators.FrontRear)
   genome.crossover.set(genetic_operators.Recombine)
   #genome.crossover.add(genetic_operators.SinglePointCrossover)
+  genome.crossover.add(genetic_operators.AverageBackground)
 
   # Initialize GA engine
   ga = ImgEvolveGA(genome)

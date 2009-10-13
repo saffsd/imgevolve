@@ -82,6 +82,22 @@ def Transpose(genome, **args):
   else:
     return 0
 
+def AdjustBackground(genome, **args):
+  """Adjust the background color"""
+  if Util.randomFlipCoin(args['pmut']):
+    bg = genome.bg
+    genome.bg = mutatecolor(bg)
+    return 1
+  else:
+    return 0
+
+def ReplaceBackground(genome, **args):
+  if Util.randomFlipCoin(args['pmut']):
+    genome.bg = randrgb()
+    return 1
+  else:
+    return 0
+
 def mutatecolor(color):
   r = []
   for c in color:
@@ -129,6 +145,22 @@ def SwapOne(genome, **args):
   sister.shapes[sis_i] = brother.shapes[bro_i]
   brother.shapes[bro_i] = temp
   return (sister, brother)
+
+def AverageBackground(genome, **args):
+  """Average the background"""
+  gMom = args['mom']
+  gDad = args['dad']
+
+  sister = gMom.clone()
+  brother = gDad.clone()
+  sister.resetStats()
+  brother.resetStats()
+
+  cm = color_mean(gMom.bg, gDad.bg)
+  sister.bg = cm
+  brother.bg = cm
+
+  return sister, brother
 
 def Recombine(genome, **args):
   """Randomly redistribute the genetic material of the parents into
