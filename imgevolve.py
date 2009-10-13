@@ -71,7 +71,29 @@ class ShowIntermediate:
       best.save(os.path.join(self.output_dir,'best%04d.png' % self.count))
     self.count += 1
     return False
-  
+
+import gtk
+
+class LiveWindow:
+    func_name= "Moo"
+    func_doc = 'Moo'
+    def __init__(self):
+      window = gtk.Window()
+      area = gtk.DrawingArea()
+      area.show()
+      window.add(area)
+      window.present()
+      self.area = area
+
+    def __call__(self, ga):
+      best = ga.bestIndividual()
+      # Create the cairo context
+      self.area.window.clear()
+      cr = self.area.window.cairo_create()
+      for s in best.shapes:
+        s.render(cr)
+
+ 
     
 
 def main(options, image, outfile):
@@ -129,6 +151,9 @@ def main(options, image, outfile):
     callback = ShowIntermediate(options.output_dir, options.output_freq)
     ga.stepCallback.add(callback)
 
+  if options.live_view:
+    ga.stepCallback.add(LiveWindow())
+  
   print genome
   print ga
 
@@ -153,6 +178,7 @@ if __name__ == "__main__":
   group.add_option('-o', type='string', dest='output_file', help='File to write final evolved image to')
   group.add_option('-d', type='string', dest='output_dir', help='Directory to write intermediate images')
   group.add_option('-n', type='int', dest='output_freq', default=10, help='Frequency between intermediate images (generations)')
+  group.add_option('-l', action='store_true', dest='live_view', help='Show live view of running evolution')
   parser.add_option_group(group)
 
   group = OptionGroup(parser, 'Shape Parameters')

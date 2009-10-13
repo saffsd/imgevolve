@@ -14,5 +14,7 @@ def randrgba():
   g = uniform(0.0,1.0)
   b = uniform(0.0,1.0)
   a = uniform(0.0,1.0)
+  #a=1.0
+  #a=0.5
   return (r,g,b,a)
 

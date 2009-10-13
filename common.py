@@ -12,6 +12,8 @@ from random import uniform, randint, choice, gauss
 
 numpy.seterr(all='raise')
 
+GROWTH_CONST = 50
+
 class TargetImage:
   """
   Encapsulates information about the evolution target
@@ -96,8 +98,10 @@ class Ellipse:
   @staticmethod
   def random(genome):
     x,y = randpoint(genome.width,genome.height)
-    width = uniform(0.0,1.0) * genome.width 
-    height = uniform(0.0,1.0) * genome.height 
+    #width = uniform(0.0,1.0) * genome.width 
+    #height = uniform(0.0,1.0) * genome.height 
+    width = abs(gauss(0,GROWTH_CONST))
+    height = abs(gauss(0,GROWTH_CONST))
     angle = randint(0,360)
     color = randrgba()
     return Ellipse(x,y,width,height,angle,color)
@@ -106,12 +110,12 @@ class Ellipse:
     self.angle += int(gauss(0,10))
     
   def mut_center(self, genome):
-    self.x += gauss(0,10)
-    self.y += gauss(0,10)
+    self.x += gauss(0,GROWTH_CONST)
+    self.y += gauss(0,GROWTH_CONST)
 
   def mut_size(self, genome):
-    self.width += gauss(0,10)
-    self.height += gauss(0,10)
+    self.width += gauss(0,GROWTH_CONST)
+    self.height += gauss(0,GROWTH_CONST)
 
   def mutate(self, genome):
     """ 
@@ -156,15 +160,19 @@ class Polygon:
   def mut_vertices(self, genome):
     v = choice(self.vertices)
     for dim in [0,1]:
-      v[dim] += gauss(0,10)
+      v[dim] += gauss(0,GROWTH_CONST)
 
   def mut_order(self, genome):
     vert_min = genome.getParam('vert_min')
     vert_max = genome.getParam('vert_max')
-    pos = choice(xrange(len(self.vertices)))
+    pos = choice(xrange(len(self.vertices)-1))
     if randint(0,1):
       if len(self.vertices) < vert_max:
-            self.vertices.insert(pos, randpoint(genome.width, genome.height))
+          #self.vertices.insert(pos, randpoint(genome.width, genome.height))
+          v1 = self.vertices[pos]
+          v2 = self.vertices[pos+1]
+          v = [ (d1 + d2) / 2 + gauss(0,GROWTH_CONST) for d1,d2 in zip(v1,v2) ]
+          self.vertices.insert(pos+1, v)
     else:
       if len(self.vertices) > vert_min:
         del self.vertices[pos]
@@ -189,7 +197,15 @@ class Polygon:
     v_max = genome.getParam('vert_max')
     width = genome.width
     height = genome.height
-    vertices = [ randpoint(width, height) for i in range(randint(v_min,v_max)) ]
+
+    num_vertices = randint(v_min, v_max)
+    root = randpoint(width, height)
+    vertices = [root]
+    for i in range(num_vertices - 1):
+      prev = vertices[-1]
+      new = [ d + gauss(0,GROWTH_CONST) for d in prev ]
+      vertices.append(new)
+    #vertices = [ randpoint(width, height) for i in range(randint(v_min,v_max)) ]
     color = randrgba()
     return Polygon(vertices, color)
 
