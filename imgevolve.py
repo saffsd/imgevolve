@@ -77,13 +77,15 @@ import gtk
 class LiveWindow:
     func_name= "Moo"
     func_doc = 'Moo'
-    def __init__(self):
-      window = gtk.Window()
-      area = gtk.DrawingArea()
-      area.show()
-      window.add(area)
-      window.present()
-      self.area = area
+    def __init__(self, width, height):
+    #def __init__(self):
+      self.window = gtk.Window()
+      self.window.set_default_size(width, height)
+      self.area = gtk.DrawingArea()
+      #self.area.set_size_request(best.width, best.height)
+      self.area.show()
+      self.window.add(self.area)
+      self.window.present()
 
     def __call__(self, ga):
       best = ga.bestIndividual()
@@ -153,7 +155,7 @@ def main(options, image, outfile):
     ga.stepCallback.add(callback)
 
   if options.live_view:
-    ga.stepCallback.add(LiveWindow())
+    ga.stepCallback.add(LiveWindow(*target.target.size))
   
   print genome
   print ga
