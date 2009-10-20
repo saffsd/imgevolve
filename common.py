@@ -102,12 +102,12 @@ class Ellipse:
     #height = uniform(0.0,1.0) * genome.height 
     width = abs(gauss(0,GROWTH_CONST))
     height = abs(gauss(0,GROWTH_CONST))
-    angle = randint(0,360)
+    angle = uniform(0.0,math.pi)
     color = randrgba()
     return Ellipse(x,y,width,height,angle,color)
 
   def mut_angle(self, genome):
-    self.angle += int(gauss(0,10))
+    self.angle += gauss(0, math.pi/4) 
     
   def mut_center(self, genome):
     self.x += gauss(0,GROWTH_CONST)
