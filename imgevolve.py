@@ -127,6 +127,7 @@ def main(options, image, outfile):
   #genome.mutator.add(genetic_operators.Reshuffle)
   genome.mutator.add(genetic_operators.Transpose)
   genome.mutator.add(genetic_operators.MutateShape)
+  genome.mutator.add(genetic_operators.Crawl)
   #genome.mutator.add(genetic_operators.ChangePolygonOrder)
   genome.mutator.add(genetic_operators.ChangeShapeColor)
   genome.mutator.add(genetic_operators.AdjustBackground)

@@ -53,6 +53,16 @@ def MutateShape(genome, **args):
       mut_count += 1
   return mut_count
 
+def Crawl(genome, **args):
+  if len(genome.shapes) == 0: return 0
+  mut_count = 0
+  if Util.randomFlipCoin(args['pmut']):
+    for i in range(len(genome.shapes)):
+      genome.shapes[i] = genome.shapes[i].mutate(genome)
+      mut_count += 1
+  return mut_count
+
+
 
 def ChangeShapeColor(genome, **args):
   """ Modify shape color at random """
