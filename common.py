@@ -253,9 +253,11 @@ class Candidate(GenomeBase):
     ext = os.path.splitext(filename)[1].lower()
     w, h = self.width, self.height
     if ext == '.svg':
-      surface = cairo.SVGSurface(open(filename,'w'), w, h)
+      surface = cairo.SVGSurface(filename, w, h)
       ctx = cairo.Context(surface)
       self.cairo_draw(ctx)
+      surface.finish()
+      surface.flush()
     elif ext == '.png':
       surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, w, h)
       ctx = cairo.Context(surface)

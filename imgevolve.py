@@ -97,9 +97,9 @@ class LiveWindow:
     
 
 def main(options, image, outfile):
-  # Initialize the target
   target = TargetImage(image)
 
+  # Decide which evaluation function to use
   if options.eval_func == 'rms':
     eval_func = target.rms_difference
   elif options.eval_func == 'abs':
