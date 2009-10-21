@@ -6,12 +6,30 @@ import shutil
 import time
 from optparse import OptionParser, OptionGroup
 from collections import defaultdict
+from collections import namedtuple
 
 from pyevolve.GSimpleGA import GSimpleGA
 from pyevolve import Selectors
 
 import genetic_operators
 from common import Candidate, TargetImage
+
+Options = namedtuple('Options','eval_func init_poly vert_min vert_max\
+                                pop_size gens mut_rate cross_rate output_dir\
+                                output_freq live_view')
+
+default = Options( eval_func = 'rms'
+                 , init_poly= 50
+                 , vert_min = 3
+                 , vert_max = 10
+                 , pop_size = 25
+                 , gens = 10000
+                 , mut_rate = 0.01
+                 , cross_rate = 0.8
+                 , output_dir = None
+                 , output_freq = 10
+                 , live_view = False
+                 )
 
 def mean(seq):
   return sum(seq) / float(len(seq))
@@ -198,6 +216,7 @@ if __name__ == "__main__":
   group.add_option('--pop', type='int', default=25, dest='pop_size', help='Population size')
   parser.add_option_group(group)
 
+  parser.set_defaults(**default._asdict())
   options, args = parser.parse_args()
 
   if len(args) != 1:
