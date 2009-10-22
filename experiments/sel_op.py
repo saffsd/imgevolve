@@ -1,3 +1,8 @@
+"""
+by Marco Lui
+This experiment varies the selection operator, rendering each image for 
+5000 generations using each operator.
+"""
 from imgevolve import main, default, cleanup
 import os
 

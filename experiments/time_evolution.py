@@ -1,3 +1,9 @@
+"""
+by Marco Lui
+This experiment times the runtime of imgevolve on each target image
+for 100 generations for each fitness function. It writes the timing
+information to a csv file.
+"""
 from imgevolve import main, default
 import timeit
 import csv

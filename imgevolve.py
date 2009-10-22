@@ -1,5 +1,10 @@
 #!/usr/bin/env python
-
+"""
+imgevolve by Marco Lui
+http://github.com/saffsd/imgevolve
+An implementation of a genetic algorithm to evolve an approximation to an image
+using a set of translucent shapes.
+"""
 import pdb
 import os
 import shutil
@@ -34,15 +39,28 @@ default = Options( eval_func = 'rms'
                  )
 
 def mean(seq):
+  """
+  Calulate the mean value in a sequence
+  """
   return sum(seq) / float(len(seq))
 
 class ImgEvolveGA(GSimpleGA):
+  """
+  Subclass of GSimpleGA which adds some instrumentation to monitor parameters specific
+  to imgevolve.
+  """
   def printStats(self):
+    """
+    Override printStats so we get an extended summary
+    """
     GSimpleGA.printStats(self)
     self.printSimulationRate()
     self.printShapeSummary()
 
   def printSimulationRate(self):
+    """
+    Display the current evolution rate
+    """
     if not hasattr(self, 'rateinfo'):
       self.rateinfo = (0, self.time_init)
     
@@ -53,6 +71,9 @@ class ImgEvolveGA(GSimpleGA):
     self.rateinfo = (self.currentGeneration, now)
     
   def printShapeSummary(self):
+    """
+    Display a summary of shapes across all individuals
+    """
     pop = self.getPopulation()
     shape_counts = []
     shape_type_count = defaultdict(list)
@@ -245,7 +266,7 @@ if __name__ == "__main__":
   group.add_option('--sel', type='string', dest='sel_op', help='Selection Operator [(rank), tournament, roulette]')
   group.add_option('--gens', type='int', dest='gens', help='Generations to run for')
   group.add_option('--pop', type='int', dest='pop_size', help='Population size')
-  group.add_option('--elite', action='store_true', dest='elitism', help='Show live view of running evolution')
+  group.add_option('--elite', action='store_true', dest='elitism', help='Enable elitism')
   parser.add_option_group(group)
 
   parser.set_defaults(**default._asdict())

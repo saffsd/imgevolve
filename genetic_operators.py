@@ -1,3 +1,7 @@
+"""
+Genetic operators for imgevolve
+by Marco Lui
+"""
 import pyevolve.Util as Util
 from rand import randrgb, randpoint
 from random import randint, uniform, choice, shuffle, sample

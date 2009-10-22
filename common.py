@@ -1,3 +1,8 @@
+"""
+Part of imgevolve
+by Marco Lui
+"""
+
 from PIL import Image, ImageChops
 import numpy
 import cairo

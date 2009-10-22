@@ -1,3 +1,9 @@
+"""
+by Marco Lui
+This experiment renders each target image specified using each of the 4 
+fitness functions, for 5000 generations. It assumes that the target images
+are in the same folder as the program.
+"""
 from imgevolve import main, default, cleanup
 import os
 

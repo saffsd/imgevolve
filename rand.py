@@ -1,3 +1,8 @@
+"""
+Convenience functions for some random operations
+part of imgevolve
+by Marco Lui
+"""
 from random import uniform, randint, choice
 
 def randpoint(width, height):
@@ -14,7 +19,5 @@ def randrgba():
   g = uniform(0.0,1.0)
   b = uniform(0.0,1.0)
   a = uniform(0.0,1.0)
-  #a=1.0
-  #a=0.5
   return (r,g,b,a)
 
