@@ -92,6 +92,23 @@ class ShowIntermediate:
     self.count += 1
     return False
 
+class ShowIntermediateAll:
+  func_name= "ShowIntermediateAll"
+  func_doc = 'Show all individuals in an intermediate generation'
+  def __init__(self, output_dir, output_freq):
+    self.output_dir = output_dir 
+    self.output_freq = output_freq
+    self.count = 0
+
+  def __call__(self, ga):
+    if self.count % self.output_freq == 0:
+      output_dir = os.path.join(self.output_dir, 'gen%d'%self.count)
+      cleanup(output_dir)
+      for i,ind in enumerate(ga.getPopulation()):
+        ind.save(os.path.join(output_dir,'ind%d.png' % i))
+    self.count += 1
+    return False
+
 import gtk
 
 class LiveWindow:
@@ -182,6 +199,8 @@ def main(options, image, outfile):
   # Set up the display callback if required
   if options.output_dir is not None:
     callback = ShowIntermediate(options.output_dir, options.output_freq)
+    ga.stepCallback.add(callback)
+    callback = ShowIntermediateAll(options.output_dir, options.output_freq * 100)
     ga.stepCallback.add(callback)
 
   if options.live_view:
