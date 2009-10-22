@@ -6,12 +6,32 @@ import shutil
 import time
 from optparse import OptionParser, OptionGroup
 from collections import defaultdict
+from collections import namedtuple
 
 from pyevolve.GSimpleGA import GSimpleGA
 from pyevolve import Selectors
 
 import genetic_operators
 from common import Candidate, TargetImage
+
+Options = namedtuple('Options','eval_func init_poly vert_min vert_max\
+                                pop_size gens mut_rate cross_rate output_dir\
+                                output_freq live_view sel_op elitism')
+
+default = Options( eval_func = 'rms'
+                 , init_poly= 50
+                 , vert_min = 3
+                 , vert_max = 10
+                 , pop_size = 25
+                 , gens = 10000
+                 , mut_rate = 0.01
+                 , cross_rate = 0.8
+                 , sel_op = 'rank'
+                 , output_dir = None
+                 , output_freq = 10
+                 , live_view = False
+                 , elitism = False
+                 )
 
 def mean(seq):
   return sum(seq) / float(len(seq))
@@ -139,11 +159,21 @@ def main(options, image, outfile):
 
   # Initialize GA engine
   ga = ImgEvolveGA(genome)
-  ga.setMinimax(0) # Set minimzation problem
-  ga.setElitism(False)
-  #ga.selector.set(Selectors.GTournamentSelector)
-  #ga.selector.set(Selectors.GRouletteWheel)
-  ga.selector.set(Selectors.GRankSelector)
+  ga.setMinimax(0) # Set minimzation problem 
+
+  # Configure elitism 
+  ga.setElitism(options.elitism)
+  
+  # Decide which selection operator to use
+  if options.sel_op == 'tournament':
+    ga.selector.set(Selectors.GTournamentSelector)
+  elif options.sel_op == 'roulette':
+    ga.selector.set(Selectors.GRouletteWheel)
+  elif options.sel_op == 'rank':
+    ga.selector.set(Selectors.GRankSelector)
+  else:
+    raise ValueError, "Unknown selection operator!"
+
   ga.setPopulationSize(options.pop_size)
   ga.setGenerations(options.gens)
   ga.setMutationRate(options.mut_rate)
@@ -175,28 +205,31 @@ if __name__ == "__main__":
   parser = OptionParser(usage = '%prog [options] input')
 
   parser.add_option('-p', action='store_true', dest='profile', help='Enable Profiling')
-  parser.add_option('--eval', type='string', dest='eval_func', default='rms', help='Evaluation function: [(rms),abs,percept,square]')
+  parser.add_option('--eval', type='string', dest='eval_func', help='Evaluation function: [(rms),abs,percept,square]')
 
   group = OptionGroup(parser, 'Output Options')
   group.add_option('-o', type='string', dest='output_file', help='File to write final evolved image to')
   group.add_option('-d', type='string', dest='output_dir', help='Directory to write intermediate images')
-  group.add_option('-n', type='int', dest='output_freq', default=10, help='Frequency between intermediate images (generations)')
+  group.add_option('-n', type='int', dest='output_freq', help='Frequency between intermediate images (generations)')
   group.add_option('-l', action='store_true', dest='live_view', help='Show live view of running evolution')
   parser.add_option_group(group)
 
   group = OptionGroup(parser, 'Shape Parameters')
-  group.add_option('--v_min', type='int', dest='vert_min', default=3, help='Minimum number of vertices')
-  group.add_option('--v_max', type='int', dest='vert_max', default=10, help='Maximum number of vertices')
-  group.add_option('--initial', type='int', dest='init_poly', default=50, help='Initial Shape Count')
+  group.add_option('--v_min', type='int', dest='vert_min', help='Minimum number of vertices')
+  group.add_option('--v_max', type='int', dest='vert_max', help='Maximum number of vertices')
+  group.add_option('--initial', type='int', dest='init_poly', help='Initial Shape Count')
   parser.add_option_group(group)
 
   group = OptionGroup(parser, "GA Parameters")
-  group.add_option('--mut_rate', type='float', dest='mut_rate', default=0.01, help='Mutation Rate')
-  group.add_option('--cross_rate', type='float', dest='cross_rate', default=0.8, help='Crossover Rate')
-  group.add_option('--gens', type='int', dest='gens', default=10000, help='Generations to run for')
-  group.add_option('--pop', type='int', default=25, dest='pop_size', help='Population size')
+  group.add_option('--mut_rate', type='float', dest='mut_rate', help='Mutation Rate')
+  group.add_option('--cross_rate', type='float', dest='cross_rate', help='Crossover Rate')
+  group.add_option('--sel', type='string', dest='sel_op', help='Selection Operator [(rank), tournament, roulette]')
+  group.add_option('--gens', type='int', dest='gens', help='Generations to run for')
+  group.add_option('--pop', type='int', dest='pop_size', help='Population size')
+  group.add_option('--elite', action='store_true', dest='elitism', help='Show live view of running evolution')
   parser.add_option_group(group)
 
+  parser.set_defaults(**default._asdict())
   options, args = parser.parse_args()
 
   if len(args) != 1:
