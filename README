@@ -1,0 +1,32 @@
+###
+Introduction
+###
+imgevolve is an implementation of a genetic algorithm approach
+to approximating an image using translucent shapes.
+
+To use it, run 
+
+./imgevolve.py <target image>
+
+imgevolve has a large number of optional parameters. Run
+
+./imgevolve --help
+
+for more information.
+
+### 
+Requirements
+###
+Python 2.6
+Pyevolve 0.5
+pycairo
+pygtk (for live view)
+numpy
+Python Imaging Library
+
+
+###
+Contact
+###
+Marco Lui (saffsd@gmail.com)
+http://github.com/saffsd/imgevolve
